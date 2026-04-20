@@ -45,6 +45,18 @@ def _run(cmd, cwd=None, env=None, timeout=300):
         raise RuntimeError(f"Scanner timed out after {timeout}s")
 
 
+MANIFEST_FILES = {
+    "requirements.txt": "pip-audit",
+    "pyproject.toml": "pip-audit",
+    "setup.py": "pip-audit",
+    "pipfile": "pip-audit",
+    "pipfile.lock": "pip-audit",
+    "package.json": "npm-audit",
+    "package-lock.json": "npm-audit",
+    "yarn.lock": "npm-audit",
+}
+
+
 def detect_file_types(repo_path):
     extensions = set()
     for root, dirs, files in os.walk(repo_path):
@@ -55,11 +67,15 @@ def detect_file_types(repo_path):
                 extensions.add(ext)
             if f.lower() == "dockerfile" or f.lower().startswith("dockerfile."):
                 extensions.add("dockerfile")
+            manifest_scanner = MANIFEST_FILES.get(f.lower())
+            if manifest_scanner:
+                extensions.add(f"manifest:{manifest_scanner}")
     return extensions
 
 
 def get_applicable_scanners(extensions):
-    scanners = {"semgrep", "gitleaks", "trufflehog"}
+    # SCA scanners run on every repo
+    scanners = {"semgrep", "gitleaks", "trufflehog", "osv-scanner", "trivy"}
     mapping = {
         ".py": {"bandit"},
         ".go": {"gosec"},
@@ -86,6 +102,8 @@ def get_applicable_scanners(extensions):
     for ext in extensions:
         if ext in mapping:
             scanners.update(mapping[ext])
+        elif ext.startswith("manifest:"):
+            scanners.add(ext.removeprefix("manifest:"))
     return scanners
 
 
@@ -463,7 +481,231 @@ def run_hadolint(repo_path, repo_name, log_cb=None):
     return findings
 
 
+def run_osv_scanner(repo_path, repo_name, log_cb=None):
+    findings = []
+    if log_cb:
+        log_cb(f"[osv-scanner] Scanning {repo_name}...")
+    try:
+        stdout, stderr, _ = _run(
+            ["osv-scanner", "--format", "json", "--recursive", repo_path],
+            timeout=300,
+        )
+        # osv-scanner writes JSON to stdout even on non-zero exit (when vulns found)
+        for candidate in [stdout, stderr]:
+            try:
+                data = json.loads(candidate or "{}")
+                for result in data.get("results", []):
+                    src = result.get("source", {})
+                    for pkg in result.get("packages", []):
+                        pkg_info = pkg.get("package", {})
+                        pkg_name = pkg_info.get("name", "")
+                        pkg_ver = pkg_info.get("version", "")
+                        for vuln in pkg.get("vulnerabilities", []):
+                            vid = vuln.get("id", "")
+                            aliases = vuln.get("aliases", [])
+                            severity = "MEDIUM"
+                            # Map CVSS severity if available
+                            for sev_info in vuln.get("severity", []):
+                                score = sev_info.get("score", "")
+                                if "CRITICAL" in score.upper():
+                                    severity = "CRITICAL"
+                                elif "HIGH" in score.upper():
+                                    severity = "HIGH"
+                                elif "LOW" in score.upper():
+                                    severity = "LOW"
+                            cve = next((a for a in aliases if a.startswith("CVE-")), vid)
+                            findings.append(_make_finding(
+                                scanner="osv-scanner",
+                                severity=severity,
+                                confidence="HIGH",
+                                rule_id=vid,
+                                title=f"{pkg_name}@{pkg_ver} — {cve}",
+                                description=vuln.get("summary", vuln.get("details", ""))[:500],
+                                file_path=src.get("path", "").replace(repo_path, "").lstrip("/"),
+                                line=0,
+                                code_snippet="",
+                                repo=repo_name,
+                            ))
+                break
+            except (json.JSONDecodeError, KeyError):
+                continue
+    except RuntimeError as e:
+        if log_cb:
+            log_cb(f"[osv-scanner] Skipped: {e}")
+    except Exception as e:
+        if log_cb:
+            log_cb(f"[osv-scanner] Error: {e}")
+    if log_cb:
+        log_cb(f"[osv-scanner] Found {len(findings)} findings")
+    return findings
+
+
+def run_trivy(repo_path, repo_name, log_cb=None):
+    findings = []
+    if log_cb:
+        log_cb(f"[trivy] Scanning {repo_name}...")
+    try:
+        stdout, stderr, _ = _run(
+            ["trivy", "fs", "--format", "json", "--quiet", "--no-progress", repo_path],
+            timeout=300,
+        )
+        data = json.loads(stdout or "{}")
+        for result in data.get("Results", []):
+            target = result.get("Target", "")
+            for vuln in result.get("Vulnerabilities", []) or []:
+                sev = vuln.get("Severity", "UNKNOWN")
+                findings.append(_make_finding(
+                    scanner="trivy",
+                    severity=sev if sev in ("CRITICAL", "HIGH", "MEDIUM", "LOW") else "INFO",
+                    confidence="HIGH",
+                    rule_id=vuln.get("VulnerabilityID", ""),
+                    title=f"{vuln.get('PkgName', '')}@{vuln.get('InstalledVersion', '')} — {vuln.get('VulnerabilityID', '')}",
+                    description=vuln.get("Description", vuln.get("Title", ""))[:500],
+                    file_path=target,
+                    line=0,
+                    code_snippet=f"Fixed in: {vuln.get('FixedVersion', 'no fix available')}",
+                    repo=repo_name,
+                ))
+            for misconfig in result.get("Misconfigurations", []) or []:
+                sev = misconfig.get("Severity", "MEDIUM")
+                findings.append(_make_finding(
+                    scanner="trivy",
+                    severity=sev if sev in ("CRITICAL", "HIGH", "MEDIUM", "LOW") else "INFO",
+                    confidence="HIGH",
+                    rule_id=misconfig.get("ID", ""),
+                    title=misconfig.get("Title", ""),
+                    description=misconfig.get("Description", "")[:500],
+                    file_path=target,
+                    line=misconfig.get("CauseMetadata", {}).get("StartLine", 0),
+                    code_snippet=misconfig.get("Resolution", ""),
+                    repo=repo_name,
+                ))
+    except RuntimeError as e:
+        if log_cb:
+            log_cb(f"[trivy] Skipped: {e}")
+    except Exception as e:
+        if log_cb:
+            log_cb(f"[trivy] Error: {e}")
+    if log_cb:
+        log_cb(f"[trivy] Found {len(findings)} findings")
+    return findings
+
+
+def run_pip_audit(repo_path, repo_name, log_cb=None):
+    findings = []
+    if log_cb:
+        log_cb(f"[pip-audit] Scanning {repo_name}...")
+    # Find all requirement files
+    req_files = []
+    for root, dirs, files in os.walk(repo_path):
+        dirs[:] = [d for d in dirs if d not in (".git", "node_modules", "__pycache__")]
+        for f in files:
+            if f.lower() in ("requirements.txt", "requirements-dev.txt", "requirements-test.txt"):
+                req_files.append(os.path.join(root, f))
+    try:
+        if req_files:
+            for req_file in req_files:
+                stdout, stderr, _ = _run(
+                    ["pip-audit", "-r", req_file, "--format", "json", "--no-deps"],
+                    timeout=120,
+                )
+                _parse_pip_audit(stdout, req_file.replace(repo_path, "").lstrip("/"), repo_name, findings)
+        else:
+            # Try project-level audit (pyproject.toml / setup.py)
+            stdout, stderr, _ = _run(
+                ["pip-audit", "--format", "json", "--no-deps"],
+                cwd=repo_path,
+                timeout=120,
+            )
+            _parse_pip_audit(stdout, "", repo_name, findings)
+    except RuntimeError as e:
+        if log_cb:
+            log_cb(f"[pip-audit] Skipped: {e}")
+    except Exception as e:
+        if log_cb:
+            log_cb(f"[pip-audit] Error: {e}")
+    if log_cb:
+        log_cb(f"[pip-audit] Found {len(findings)} findings")
+    return findings
+
+
+def _parse_pip_audit(stdout, file_path, repo_name, findings):
+    data = json.loads(stdout or "{}")
+    for dep in data.get("dependencies", []):
+        pkg = dep.get("name", "")
+        ver = dep.get("version", "")
+        for vuln in dep.get("vulns", []):
+            vid = vuln.get("id", "")
+            aliases = vuln.get("aliases", [])
+            cve = next((a for a in aliases if a.startswith("CVE-")), vid)
+            findings.append(_make_finding(
+                scanner="pip-audit",
+                severity="HIGH",
+                confidence="HIGH",
+                rule_id=vid,
+                title=f"{pkg}=={ver} — {cve}",
+                description=vuln.get("description", vuln.get("fix_versions", ""))[:500],
+                file_path=file_path,
+                line=0,
+                code_snippet=f"Fix: upgrade to {', '.join(vuln.get('fix_versions', []))}",
+                repo=repo_name,
+            ))
+
+
+def run_npm_audit(repo_path, repo_name, log_cb=None):
+    findings = []
+    if log_cb:
+        log_cb(f"[npm-audit] Scanning {repo_name}...")
+    # Find directories containing package.json (but not node_modules)
+    pkg_dirs = []
+    for root, dirs, files in os.walk(repo_path):
+        dirs[:] = [d for d in dirs if d not in (".git", "node_modules")]
+        if "package.json" in files:
+            pkg_dirs.append(root)
+    if not pkg_dirs:
+        if log_cb:
+            log_cb("[npm-audit] No package.json found, skipping")
+        return findings
+    try:
+        for pkg_dir in pkg_dirs:
+            rel_dir = pkg_dir.replace(repo_path, "").lstrip("/") or "."
+            stdout, stderr, rc = _run(
+                ["npm", "audit", "--json"],
+                cwd=pkg_dir,
+                timeout=120,
+            )
+            data = json.loads(stdout or "{}")
+            # npm audit v7+ format
+            for vuln_id, vuln in (data.get("vulnerabilities") or {}).items():
+                sev = vuln.get("severity", "moderate")
+                via = vuln.get("via", [])
+                desc = next((v.get("title", "") for v in via if isinstance(v, dict)), vuln_id)
+                url = next((v.get("url", "") for v in via if isinstance(v, dict)), "")
+                findings.append(_make_finding(
+                    scanner="npm-audit",
+                    severity=normalize_severity(sev),
+                    confidence="HIGH",
+                    rule_id=str(next((v.get("source", "") for v in via if isinstance(v, dict)), vuln_id)),
+                    title=f"{vuln_id} — {desc}",
+                    description=f"{desc} {url}".strip(),
+                    file_path=f"{rel_dir}/package.json",
+                    line=0,
+                    code_snippet=f"Fix: {vuln.get('fixAvailable', 'unknown')}",
+                    repo=repo_name,
+                ))
+    except RuntimeError as e:
+        if log_cb:
+            log_cb(f"[npm-audit] Skipped: {e}")
+    except Exception as e:
+        if log_cb:
+            log_cb(f"[npm-audit] Error: {e}")
+    if log_cb:
+        log_cb(f"[npm-audit] Found {len(findings)} findings")
+    return findings
+
+
 SCANNER_RUNNERS = {
+    # SAST
     "semgrep": run_semgrep,
     "bandit": run_bandit,
     "gosec": run_gosec,
@@ -473,6 +715,11 @@ SCANNER_RUNNERS = {
     "brakeman": run_brakeman,
     "flawfinder": run_flawfinder,
     "hadolint": run_hadolint,
+    # SCA
+    "osv-scanner": run_osv_scanner,
+    "trivy": run_trivy,
+    "pip-audit": run_pip_audit,
+    "npm-audit": run_npm_audit,
 }
 
 
