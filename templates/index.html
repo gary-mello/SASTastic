@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SASTastic</title>
+<style>
+  :root {
+    --bg: #0d0f14;
+    --bg2: #151820;
+    --bg3: #1c2030;
+    --border: #2a2f3d;
+    --text: #e2e8f0;
+    --text2: #8892a4;
+    --accent: #4f8ef7;
+    --accent2: #3a6fd8;
+    --critical: #ff4757;
+    --high: #ff6b6b;
+    --medium: #ffa502;
+    --low: #ffd32a;
+    --info: #747d8c;
+    --success: #2ed573;
+    --radius: 8px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; }
+
+  /* Layout */
+  #app { display: flex; flex-direction: column; min-height: 100vh; }
+  .navbar { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; }
+  .navbar-brand { display: flex; align-items: center; gap: 10px; font-size: 1.2rem; font-weight: 700; color: var(--accent); }
+  .navbar-brand svg { color: var(--accent); }
+  .navbar-right { display: flex; align-items: center; gap: 12px; }
+  .user-badge { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text2); }
+  .main { flex: 1; padding: 32px 24px; max-width: 1400px; margin: 0 auto; width: 100%; }
+
+  /* Screens */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* Cards */
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+  .card-sm { padding: 16px; }
+
+  /* Token screen */
+  .token-screen { display: flex; align-items: center; justify-content: center; min-height: 70vh; }
+  .token-card { width: 100%; max-width: 440px; text-align: center; }
+  .token-card h1 { font-size: 2rem; margin-bottom: 8px; }
+  .token-card .subtitle { color: var(--text2); margin-bottom: 32px; font-size: 0.95rem; }
+  .logo-icon { font-size: 3rem; margin-bottom: 16px; }
+
+  /* Forms */
+  .form-group { margin-bottom: 16px; text-align: left; }
+  .form-group label { display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text2); font-weight: 500; }
+  input[type="password"], input[type="text"], input[type="search"] {
+    width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius);
+    color: var(--text); padding: 10px 14px; font-size: 0.95rem; transition: border-color 0.2s;
+  }
+  input:focus { outline: none; border-color: var(--accent); }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: var(--radius);
+    font-size: 0.95rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-danger { background: transparent; color: var(--high); border: 1px solid var(--high); }
+  .btn-danger:hover { background: rgba(255,107,107,0.1); }
+  .btn-sm { padding: 6px 14px; font-size: 0.85rem; }
+  .btn-full { width: 100%; justify-content: center; }
+
+  /* Spinner */
+  .spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+    border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Repo selection */
+  .repo-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: gap; }
+  .repo-header h2 { font-size: 1.4rem; }
+  .repo-search { margin-bottom: 16px; position: relative; }
+  .repo-search svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text2); pointer-events: none; }
+  .repo-search input { padding-left: 38px; }
+  .repo-list { max-height: 480px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius); }
+  .repo-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; cursor: pointer;
+    border-bottom: 1px solid var(--border); transition: background 0.15s; }
+  .repo-item:last-child { border-bottom: none; }
+  .repo-item:hover { background: var(--bg3); }
+  .repo-item.selected { background: rgba(79,142,247,0.08); }
+  .repo-item input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
+  .repo-info { flex: 1; min-width: 0; }
+  .repo-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .repo-meta { font-size: 0.8rem; color: var(--text2); margin-top: 2px; }
+  .lang-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.75rem;
+    background: var(--bg3); border: 1px solid var(--border); color: var(--text2); }
+  .private-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.75rem;
+    background: rgba(255,165,2,0.15); color: var(--medium); border: 1px solid rgba(255,165,2,0.3); }
+  .scan-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 20px; }
+  .selected-count { color: var(--text2); font-size: 0.9rem; }
+
+  /* Progress screen */
+  .progress-header { margin-bottom: 24px; }
+  .progress-header h2 { font-size: 1.4rem; }
+  .progress-header p { color: var(--text2); margin-top: 4px; }
+  .progress-bar-wrap { background: var(--bg3); border-radius: 20px; height: 8px; margin: 20px 0; overflow: hidden; }
+  .progress-bar { height: 100%; background: linear-gradient(90deg, var(--accent), #6fa8ff); border-radius: 20px;
+    transition: width 0.3s; width: 0%; }
+  .log-output { background: #0a0c10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px; height: 320px; overflow-y: auto; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82rem; }
+  .log-line { padding: 2px 0; }
+  .log-line.info { color: var(--text2); }
+  .log-line.clone { color: var(--accent); }
+  .log-line.scanner { color: var(--success); }
+  .log-line.error { color: var(--high); }
+  .log-line.done { color: var(--success); font-weight: 600; }
+
+  /* Results dashboard */
+  .results-layout { display: grid; grid-template-columns: 220px 1fr; gap: 20px; }
+  @media (max-width: 900px) { .results-layout { grid-template-columns: 1fr; } }
+
+  /* Summary cards */
+  .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .summary-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px; text-align: center; }
+  .summary-card .count { font-size: 2rem; font-weight: 700; }
+  .summary-card .label { font-size: 0.8rem; color: var(--text2); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .summary-card.critical .count { color: var(--critical); }
+  .summary-card.high .count { color: var(--high); }
+  .summary-card.medium .count { color: var(--medium); }
+  .summary-card.low .count { color: var(--low); }
+  .summary-card.info .count { color: var(--info); }
+  .summary-card.total .count { color: var(--accent); }
+
+  /* Sidebar */
+  .sidebar { display: flex; flex-direction: column; gap: 16px; }
+  .sidebar h3 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text2); margin-bottom: 10px; }
+  .scanner-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 0.88rem; }
+  .scanner-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .scanner-dot.ran { background: var(--success); }
+  .scanner-dot.skipped { background: var(--info); }
+  .scanner-name { flex: 1; }
+  .scanner-status { font-size: 0.75rem; color: var(--text2); }
+
+  /* Filters */
+  .filters { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .filter-select { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius);
+    color: var(--text); padding: 6px 12px; font-size: 0.85rem; cursor: pointer; }
+  .filter-select:focus { outline: none; border-color: var(--accent); }
+  .filters .spacer { flex: 1; }
+  .export-btns { display: flex; gap: 8px; }
+
+  /* Findings table */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  thead th { background: var(--bg3); padding: 10px 14px; text-align: left; font-size: 0.78rem;
+    text-transform: uppercase; letter-spacing: 0.06em; color: var(--text2); border-bottom: 1px solid var(--border);
+    cursor: pointer; user-select: none; white-space: nowrap; }
+  thead th:hover { color: var(--text); }
+  thead th .sort-icon { margin-left: 4px; opacity: 0.4; }
+  thead th.sorted .sort-icon { opacity: 1; }
+  tbody tr { border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; }
+  tbody tr:hover { background: var(--bg3); }
+  tbody tr.expanded { background: rgba(79,142,247,0.05); }
+  tbody td { padding: 10px 14px; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .expand-row td { padding: 0; background: #0a0c10; cursor: default; }
+  .expand-content { padding: 16px 20px; }
+  .expand-content .desc { color: var(--text2); margin-bottom: 12px; font-size: 0.875rem; line-height: 1.5; }
+  .expand-content pre { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px;
+    padding: 12px; overflow-x: auto; font-size: 0.8rem; font-family: 'SF Mono', 'Fira Code', monospace; color: #a8d0ff; }
+  .corroborated-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem;
+    background: rgba(79,142,247,0.2); color: var(--accent); margin-left: 6px; }
+
+  /* Severity badges */
+  .sev { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.04em; }
+  .sev-CRITICAL { background: rgba(255,71,87,0.2); color: var(--critical); border: 1px solid rgba(255,71,87,0.4); }
+  .sev-HIGH { background: rgba(255,107,107,0.2); color: var(--high); border: 1px solid rgba(255,107,107,0.4); }
+  .sev-MEDIUM { background: rgba(255,165,2,0.2); color: var(--medium); border: 1px solid rgba(255,165,2,0.4); }
+  .sev-LOW { background: rgba(255,211,42,0.2); color: var(--low); border: 1px solid rgba(255,211,42,0.3); }
+  .sev-INFO { background: rgba(116,125,140,0.2); color: var(--info); border: 1px solid rgba(116,125,140,0.3); }
+
+  /* History */
+  .history-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  .history-table th { background: var(--bg3); padding: 10px 14px; text-align: left; font-size: 0.78rem;
+    text-transform: uppercase; letter-spacing: 0.06em; color: var(--text2); border-bottom: 1px solid var(--border); }
+  .history-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  .history-table tr:hover td { background: var(--bg3); cursor: pointer; }
+
+  /* Tabs / nav */
+  .tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 1px solid var(--border); }
+  .tab { padding: 10px 18px; cursor: pointer; font-size: 0.9rem; color: var(--text2); border-bottom: 2px solid transparent;
+    margin-bottom: -1px; transition: all 0.2s; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* Misc */
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text2); }
+  .empty-state svg { margin-bottom: 16px; opacity: 0.3; }
+  .empty-state p { font-size: 0.95rem; }
+  .error-msg { background: rgba(255,107,107,0.1); border: 1px solid rgba(255,107,107,0.3);
+    border-radius: var(--radius); padding: 12px 16px; color: var(--high); margin-top: 12px; font-size: 0.875rem; }
+  .mt16 { margin-top: 16px; }
+  .gap8 { gap: 8px; }
+  .flex { display: flex; }
+  .items-center { align-items: center; }
+  .justify-between { justify-content: space-between; }
+  .text-muted { color: var(--text2); }
+  .text-sm { font-size: 0.85rem; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg2); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #3a4055; }
+
+  .new-scan-btn { margin-top: 16px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        <path d="m9 12 2 2 4-4"/>
+      </svg>
+      SASTastic
+    </div>
+    <div class="navbar-right">
+      <span class="user-badge" id="userBadge" style="display:none">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span id="userLogin"></span>
+      </span>
+      <button class="btn btn-outline btn-sm" id="clearSessionBtn" style="display:none" onclick="clearSession()">Clear Session</button>
+    </div>
+  </nav>
+
+  <div class="main">
+
+    <!-- SCREEN: Token -->
+    <div id="screenToken" class="screen active">
+      <div class="token-screen">
+        <div class="card token-card">
+          <div class="logo-icon">🛡️</div>
+          <h1>SASTastic</h1>
+          <p class="subtitle">Connect your GitHub account to start scanning repositories for security vulnerabilities.</p>
+          <div class="form-group">
+            <label>GitHub Personal Access Token</label>
+            <input type="password" id="tokenInput" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+              autocomplete="off" onkeydown="if(event.key==='Enter')connectGitHub()">
+          </div>
+          <button class="btn btn-primary btn-full" id="connectBtn" onclick="connectGitHub()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+            Connect GitHub
+          </button>
+          <div id="tokenError" class="error-msg" style="display:none"></div>
+          <p class="text-muted text-sm mt16">Your token is stored in session memory only and never written to disk. Requires <code>repo</code> scope.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN: Repos -->
+    <div id="screenRepos" class="screen">
+      <div class="flex items-center justify-between" style="margin-bottom:20px">
+        <h2>Select Repositories to Scan</h2>
+        <button class="btn btn-outline btn-sm" onclick="loadRepos()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          Refresh
+        </button>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="repo-search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text2)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="search" id="repoSearch" placeholder="Search repositories..." style="padding-left:38px" oninput="filterRepos()" >
+        </div>
+        <div class="repo-list" id="repoList">
+          <div class="empty-state"><p>Loading repositories...</p></div>
+        </div>
+      </div>
+
+      <div class="scan-footer">
+        <span class="selected-count" id="selectedCount">0 repositories selected</span>
+        <button class="btn btn-primary" id="scanBtn" onclick="startScan()" disabled>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          Scan Selected
+        </button>
+      </div>
+    </div>
+
+    <!-- SCREEN: Progress -->
+    <div id="screenProgress" class="screen">
+      <div class="progress-header">
+        <h2>Scanning in Progress</h2>
+        <p class="text-muted">Running SAST scanners across selected repositories...</p>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <div class="log-output" id="logOutput"></div>
+      <div class="mt16 flex gap8">
+        <button class="btn btn-outline" id="viewResultsBtn" style="display:none" onclick="showResults()">View Results</button>
+      </div>
+    </div>
+
+    <!-- SCREEN: Results -->
+    <div id="screenResults" class="screen">
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('findings')">Findings</div>
+        <div class="tab" onclick="switchTab('history')">Scan History</div>
+      </div>
+
+      <div id="tabFindings">
+        <div class="summary-cards" id="summarycards"></div>
+        <div class="results-layout">
+          <div class="sidebar">
+            <div class="card card-sm">
+              <h3>Scanners</h3>
+              <div id="scannerStatus"></div>
+            </div>
+            <div class="card card-sm">
+              <h3>Quick Filters</h3>
+              <div id="quickFilters" style="display:flex;flex-direction:column;gap:6px;margin-top:4px"></div>
+            </div>
+          </div>
+          <div>
+            <div class="filters">
+              <select class="filter-select" id="filterSeverity" onchange="applyFilters()">
+                <option value="">All Severities</option>
+                <option>CRITICAL</option><option>HIGH</option><option>MEDIUM</option><option>LOW</option><option>INFO</option>
+              </select>
+              <select class="filter-select" id="filterScanner" onchange="applyFilters()">
+                <option value="">All Scanners</option>
+              </select>
+              <select class="filter-select" id="filterRepo" onchange="applyFilters()">
+                <option value="">All Repos</option>
+              </select>
+              <div class="spacer"></div>
+              <div class="export-btns">
+                <button class="btn btn-outline btn-sm" onclick="exportCSV()">Export CSV</button>
+                <button class="btn btn-outline btn-sm" onclick="exportJSON()">Export JSON</button>
+                <button class="btn btn-outline btn-sm" onclick="showNewScan()">New Scan</button>
+              </div>
+            </div>
+            <div class="card" style="padding:0;overflow:hidden">
+              <div class="table-wrap">
+                <table id="findingsTable">
+                  <thead>
+                    <tr>
+                      <th onclick="sortBy('severity')" class="sorted">Severity <span class="sort-icon">↕</span></th>
+                      <th onclick="sortBy('scanner')">Scanner <span class="sort-icon">↕</span></th>
+                      <th onclick="sortBy('repo')">Repo <span class="sort-icon">↕</span></th>
+                      <th onclick="sortBy('file')">File:Line <span class="sort-icon">↕</span></th>
+                      <th onclick="sortBy('rule_id')">Rule ID <span class="sort-icon">↕</span></th>
+                      <th onclick="sortBy('title')">Title <span class="sort-icon">↕</span></th>
+                    </tr>
+                  </thead>
+                  <tbody id="findingsBody"></tbody>
+                </table>
+              </div>
+              <div class="empty-state" id="noFindings" style="display:none">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <p>No findings match the current filters.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="tabHistory" style="display:none">
+        <div class="flex items-center justify-between" style="margin-bottom:16px">
+          <h2>Scan History</h2>
+          <button class="btn btn-primary btn-sm" onclick="showNewScan()">New Scan</button>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden">
+          <table class="history-table">
+            <thead><tr>
+              <th>Scan ID</th><th>Repos</th><th>Started</th><th>Finished</th>
+              <th>Total</th><th>High</th><th>Medium</th><th>Low</th><th>Status</th>
+            </tr></thead>
+            <tbody id="historyBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+// State
+let allFindings = [];
+let filteredFindings = [];
+let allRepos = [];
+let selectedRepos = new Set();
+let currentScanId = null;
+let sortCol = 'severity';
+let sortDir = 1;
+let expandedRow = null;
+let scannerRan = [];
+let scannerSkipped = [];
+
+const SEV_ORDER = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3, INFO: 4 };
+
+// ---- Auth ----
+async function connectGitHub() {
+  const token = document.getElementById('tokenInput').value.trim();
+  if (!token) return;
+  const btn = document.getElementById('connectBtn');
+  const err = document.getElementById('tokenError');
+  err.style.display = 'none';
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Connecting...';
+
+  try {
+    const res = await fetch('/api/connect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Connection failed');
+    document.getElementById('userLogin').textContent = data.user;
+    document.getElementById('userBadge').style.display = 'flex';
+    document.getElementById('clearSessionBtn').style.display = 'inline-flex';
+    showScreen('screenRepos');
+    loadRepos();
+  } catch (e) {
+    err.textContent = e.message;
+    err.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg> Connect GitHub';
+  }
+}
+
+async function clearSession() {
+  await fetch('/api/logout', { method: 'POST' });
+  document.getElementById('userBadge').style.display = 'none';
+  document.getElementById('clearSessionBtn').style.display = 'none';
+  document.getElementById('tokenInput').value = '';
+  selectedRepos.clear();
+  allRepos = [];
+  allFindings = [];
+  showScreen('screenToken');
+}
+
+// ---- Repos ----
+async function loadRepos() {
+  const list = document.getElementById('repoList');
+  list.innerHTML = '<div class="empty-state"><p>Loading repositories...</p></div>';
+  try {
+    const res = await fetch('/api/repos');
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    allRepos = data;
+    renderRepos(allRepos);
+  } catch (e) {
+    list.innerHTML = `<div class="empty-state"><p style="color:var(--high)">${e.message}</p></div>`;
+  }
+}
+
+function renderRepos(repos) {
+  const list = document.getElementById('repoList');
+  if (!repos.length) {
+    list.innerHTML = '<div class="empty-state"><p>No repositories found.</p></div>';
+    return;
+  }
+  list.innerHTML = repos.map(r => `
+    <div class="repo-item ${selectedRepos.has(r.full_name) ? 'selected' : ''}" onclick="toggleRepo('${r.full_name}', event)">
+      <input type="checkbox" ${selectedRepos.has(r.full_name) ? 'checked' : ''} onclick="toggleRepo('${r.full_name}', event)">
+      <div class="repo-info">
+        <div class="repo-name">${esc(r.full_name)}</div>
+        <div class="repo-meta">${r.updated_at ? new Date(r.updated_at).toLocaleDateString() : ''}</div>
+      </div>
+      ${r.language ? `<span class="lang-badge">${esc(r.language)}</span>` : ''}
+      ${r.private ? '<span class="private-badge">Private</span>' : ''}
+    </div>
+  `).join('');
+  updateSelectedCount();
+}
+
+function toggleRepo(fullName, event) {
+  if (event.target.tagName === 'INPUT') {
+    // Let checkbox handle it, but sync state
+    setTimeout(() => {
+      if (event.target.checked) selectedRepos.add(fullName);
+      else selectedRepos.delete(fullName);
+      updateSelectedCount();
+      const item = event.target.closest('.repo-item');
+      if (item) item.classList.toggle('selected', event.target.checked);
+    }, 0);
+    return;
+  }
+  if (selectedRepos.has(fullName)) selectedRepos.delete(fullName);
+  else selectedRepos.add(fullName);
+  // Re-render the clicked item
+  const items = document.querySelectorAll('.repo-item');
+  items.forEach(item => {
+    const cb = item.querySelector('input[type=checkbox]');
+    const name = cb ? item.querySelector('.repo-name').textContent : null;
+    if (name === fullName) {
+      item.classList.toggle('selected', selectedRepos.has(fullName));
+      if (cb) cb.checked = selectedRepos.has(fullName);
+    }
+  });
+  updateSelectedCount();
+}
+
+function filterRepos() {
+  const q = document.getElementById('repoSearch').value.toLowerCase();
+  renderRepos(q ? allRepos.filter(r => r.full_name.toLowerCase().includes(q)) : allRepos);
+}
+
+function updateSelectedCount() {
+  const n = selectedRepos.size;
+  document.getElementById('selectedCount').textContent = `${n} repositor${n === 1 ? 'y' : 'ies'} selected`;
+  document.getElementById('scanBtn').disabled = n === 0;
+}
+
+// ---- Scan ----
+async function startScan() {
+  if (selectedRepos.size === 0) return;
+  const repos = allRepos.filter(r => selectedRepos.has(r.full_name));
+  showScreen('screenProgress');
+
+  const logEl = document.getElementById('logOutput');
+  logEl.innerHTML = '';
+  document.getElementById('progressBar').style.width = '0%';
+  document.getElementById('viewResultsBtn').style.display = 'none';
+
+  let progress = 5;
+  setProgress(progress);
+
+  try {
+    const res = await fetch('/api/scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ repos }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    currentScanId = data.scan_id;
+
+    // SSE stream
+    const evtSource = new EventSource(`/api/scan/${currentScanId}/stream`);
+    const totalSteps = repos.length * 10;
+    let step = 0;
+
+    evtSource.onmessage = (e) => {
+      if (e.data === '__DONE__') {
+        evtSource.close();
+        setProgress(100);
+        addLog('✅ Scan complete!', 'done');
+        document.getElementById('viewResultsBtn').style.display = 'inline-flex';
+        loadResults();
+        return;
+      }
+      try {
+        const msg = JSON.parse(e.data);
+        const cls = msg.startsWith('[clone]') ? 'clone' :
+                    msg.startsWith('[done]') ? 'done' :
+                    msg.startsWith('[error]') ? 'error' :
+                    msg.match(/\[(semgrep|bandit|gosec|gitleaks|trufflehog|checkov|brakeman|flawfinder|hadolint)\]/) ? 'scanner' : 'info';
+        addLog(msg, cls);
+        step++;
+        setProgress(Math.min(95, 5 + (step / totalSteps) * 90));
+      } catch {}
+    };
+
+    evtSource.onerror = () => {
+      evtSource.close();
+      addLog('[heartbeat timeout — scan may still be running]', 'info');
+    };
+
+  } catch (e) {
+    addLog(`Error: ${e.message}`, 'error');
+  }
+}
+
+function setProgress(pct) {
+  document.getElementById('progressBar').style.width = pct + '%';
+}
+
+function addLog(msg, cls = 'info') {
+  const el = document.getElementById('logOutput');
+  const line = document.createElement('div');
+  line.className = `log-line ${cls}`;
+  line.textContent = msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+async function loadResults() {
+  try {
+    const res = await fetch(`/api/scan/${currentScanId}/results`);
+    const data = await res.json();
+    allFindings = data.findings || [];
+    scannerRan = data.ran || [];
+    scannerSkipped = data.skipped || [];
+    renderResults();
+  } catch (e) {
+    addLog(`Failed to load results: ${e.message}`, 'error');
+  }
+}
+
+function showResults() {
+  showScreen('screenResults');
+  switchTab('findings');
+}
+
+function showNewScan() {
+  showScreen('screenRepos');
+}
+
+// ---- Results ----
+function renderResults() {
+  renderSummaryCards();
+  renderScannerStatus();
+  populateFilterDropdowns();
+  applyFilters();
+}
+
+function renderSummaryCards() {
+  const counts = { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 };
+  allFindings.forEach(f => { counts[f.severity] = (counts[f.severity] || 0) + 1; });
+  document.getElementById('summarycards').innerHTML = `
+    <div class="summary-card total"><div class="count">${allFindings.length}</div><div class="label">Total</div></div>
+    <div class="summary-card critical"><div class="count">${counts.CRITICAL}</div><div class="label">Critical</div></div>
+    <div class="summary-card high"><div class="count">${counts.HIGH}</div><div class="label">High</div></div>
+    <div class="summary-card medium"><div class="count">${counts.MEDIUM}</div><div class="label">Medium</div></div>
+    <div class="summary-card low"><div class="count">${counts.LOW}</div><div class="label">Low</div></div>
+    <div class="summary-card info"><div class="count">${counts.INFO}</div><div class="label">Info</div></div>
+  `;
+}
+
+function renderScannerStatus() {
+  const allScanners = ['semgrep','bandit','gosec','gitleaks','trufflehog','checkov','brakeman','flawfinder','hadolint'];
+  const el = document.getElementById('scannerStatus');
+  el.innerHTML = allScanners.map(s => {
+    const ran = scannerRan.includes(s);
+    const skipped = scannerSkipped.includes(s);
+    const status = ran ? 'ran' : skipped ? 'skipped' : 'n/a';
+    const label = ran ? 'ran' : skipped ? 'skipped' : 'n/a';
+    return `<div class="scanner-item">
+      <div class="scanner-dot ${status}"></div>
+      <span class="scanner-name">${s}</span>
+      <span class="scanner-status">${label}</span>
+    </div>`;
+  }).join('');
+
+  // Quick filters by severity
+  const qf = document.getElementById('quickFilters');
+  const sevs = ['CRITICAL','HIGH','MEDIUM','LOW','INFO'];
+  qf.innerHTML = sevs.map(s => {
+    const cnt = allFindings.filter(f => f.severity === s).length;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:4px 8px;border-radius:4px;transition:background 0.15s"
+      onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''"
+      onclick="quickFilterSev('${s}')">
+      <span class="sev sev-${s}">${s}</span>
+      <span class="text-muted text-sm">${cnt}</span>
+    </div>`;
+  }).join('');
+}
+
+function quickFilterSev(sev) {
+  document.getElementById('filterSeverity').value = sev;
+  applyFilters();
+}
+
+function populateFilterDropdowns() {
+  const scanners = [...new Set(allFindings.map(f => f.scanner))].sort();
+  const repos = [...new Set(allFindings.map(f => f.repo))].sort();
+  const sSel = document.getElementById('filterScanner');
+  const rSel = document.getElementById('filterRepo');
+  sSel.innerHTML = '<option value="">All Scanners</option>' + scanners.map(s => `<option>${esc(s)}</option>`).join('');
+  rSel.innerHTML = '<option value="">All Repos</option>' + repos.map(r => `<option>${esc(r)}</option>`).join('');
+}
+
+function applyFilters() {
+  const sev = document.getElementById('filterSeverity').value;
+  const scanner = document.getElementById('filterScanner').value;
+  const repo = document.getElementById('filterRepo').value;
+  filteredFindings = allFindings.filter(f =>
+    (!sev || f.severity === sev) &&
+    (!scanner || f.scanner === scanner) &&
+    (!repo || f.repo === repo)
+  );
+  sortFindings();
+  renderTable();
+}
+
+function sortBy(col) {
+  if (sortCol === col) sortDir *= -1;
+  else { sortCol = col; sortDir = 1; }
+  document.querySelectorAll('thead th').forEach(th => th.classList.remove('sorted'));
+  sortFindings();
+  renderTable();
+}
+
+function sortFindings() {
+  filteredFindings.sort((a, b) => {
+    let av = a[sortCol] ?? '', bv = b[sortCol] ?? '';
+    if (sortCol === 'severity') {
+      av = SEV_ORDER[av] ?? 99;
+      bv = SEV_ORDER[bv] ?? 99;
+    }
+    if (av < bv) return -1 * sortDir;
+    if (av > bv) return 1 * sortDir;
+    return 0;
+  });
+}
+
+function renderTable() {
+  const tbody = document.getElementById('findingsBody');
+  const noFind = document.getElementById('noFindings');
+  expandedRow = null;
+
+  if (!filteredFindings.length) {
+    tbody.innerHTML = '';
+    noFind.style.display = 'block';
+    return;
+  }
+  noFind.style.display = 'none';
+
+  tbody.innerHTML = filteredFindings.map((f, i) => `
+    <tr onclick="toggleExpand(${i}, this)" data-idx="${i}">
+      <td><span class="sev sev-${f.severity}">${f.severity}</span>${f.corroborated ? '<span class="corroborated-badge">corroborated</span>' : ''}</td>
+      <td>${esc(f.scanner)}</td>
+      <td title="${esc(f.repo)}">${esc(shortRepo(f.repo))}</td>
+      <td title="${esc(f.file)}">${esc(shortPath(f.file))}${f.line ? ':' + f.line : ''}</td>
+      <td title="${esc(f.rule_id)}">${esc(shortStr(f.rule_id, 30))}</td>
+      <td title="${esc(f.title)}">${esc(shortStr(f.title, 50))}</td>
+    </tr>
+  `).join('');
+}
+
+function toggleExpand(idx, tr) {
+  const existing = document.querySelector('.expand-row');
+  if (existing) {
+    existing.previousElementSibling?.classList.remove('expanded');
+    existing.remove();
+  }
+  if (expandedRow === idx) { expandedRow = null; return; }
+  expandedRow = idx;
+  tr.classList.add('expanded');
+  const f = filteredFindings[idx];
+  const expandTr = document.createElement('tr');
+  expandTr.className = 'expand-row';
+  expandTr.innerHTML = `<td colspan="6"><div class="expand-content">
+    <p class="desc">${esc(f.description || f.title)}</p>
+    ${f.code_snippet ? `<pre>${esc(f.code_snippet)}</pre>` : ''}
+    <div style="margin-top:10px;font-size:0.8rem;color:var(--text2)">
+      <strong>File:</strong> ${esc(f.file || '')} &nbsp;
+      <strong>Line:</strong> ${f.line || 'N/A'} &nbsp;
+      <strong>Confidence:</strong> ${esc(f.confidence || '')} &nbsp;
+      <strong>Rule:</strong> ${esc(f.rule_id || '')}
+    </div>
+  </div></td>`;
+  tr.after(expandTr);
+}
+
+// ---- Export ----
+function exportCSV() {
+  const cols = ['severity','scanner','repo','file','line','rule_id','title','description','confidence','corroborated'];
+  const rows = [cols.join(',')];
+  (filteredFindings.length ? filteredFindings : allFindings).forEach(f => {
+    rows.push(cols.map(c => `"${String(f[c] ?? '').replace(/"/g, '""')}"`).join(','));
+  });
+  download('findings.csv', rows.join('\n'), 'text/csv');
+}
+
+function exportJSON() {
+  download('findings.json', JSON.stringify(filteredFindings.length ? filteredFindings : allFindings, null, 2), 'application/json');
+}
+
+function download(name, content, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type }));
+  a.download = name;
+  a.click();
+}
+
+// ---- History ----
+async function loadHistory() {
+  const res = await fetch('/api/history');
+  const data = await res.json();
+  const tbody = document.getElementById('historyBody');
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text2);padding:32px">No scans yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map(s => `
+    <tr onclick="loadHistoryScan('${s.scan_id}')">
+      <td class="text-muted text-sm">${s.scan_id}</td>
+      <td>${esc((JSON.parse(s.repos || '[]')).join(', '))}</td>
+      <td>${s.started_at ? new Date(s.started_at).toLocaleString() : ''}</td>
+      <td>${s.finished_at ? new Date(s.finished_at).toLocaleString() : '—'}</td>
+      <td><strong>${s.finding_count}</strong></td>
+      <td style="color:var(--high)">${s.high_count}</td>
+      <td style="color:var(--medium)">${s.medium_count}</td>
+      <td style="color:var(--low)">${s.low_count}</td>
+      <td>${s.status}</td>
+    </tr>
+  `).join('');
+}
+
+async function loadHistoryScan(scanId) {
+  currentScanId = scanId;
+  const res = await fetch(`/api/history/${scanId}`);
+  allFindings = await res.json();
+  scannerRan = [...new Set(allFindings.map(f => f.scanner))];
+  scannerSkipped = [];
+  renderResults();
+  switchTab('findings');
+}
+
+// ---- Tabs ----
+function switchTab(tab) {
+  document.querySelectorAll('.tabs .tab').forEach((t, i) => t.classList.toggle('active', i === (tab === 'findings' ? 0 : 1)));
+  document.getElementById('tabFindings').style.display = tab === 'findings' ? 'block' : 'none';
+  document.getElementById('tabHistory').style.display = tab === 'history' ? 'block' : 'none';
+  if (tab === 'history') loadHistory();
+}
+
+// ---- Helpers ----
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function shortPath(p) { return (p || '').split('/').slice(-2).join('/') || p || ''; }
+function shortRepo(r) { return (r || '').split('/').slice(-1)[0] || r || ''; }
+function shortStr(s, n) { return s && s.length > n ? s.slice(0, n) + '…' : (s || ''); }
+</script>
+</body>
+</html>
