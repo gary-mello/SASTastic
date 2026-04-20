@@ -75,5 +75,40 @@ echo "[+] Installing Flawfinder..."
 pip install flawfinder || echo "  WARN: flawfinder install failed"
 
 echo ""
+echo "=== SCA Scanners ==="
+
+# pip-audit
+echo "[SCA 1/4] Installing pip-audit..."
+pip install pip-audit || echo "  WARN: pip-audit install failed"
+
+# OSV-Scanner
+echo "[SCA 2/4] Installing OSV-Scanner..."
+if command -v brew &>/dev/null; then
+  brew install osv-scanner || echo "  WARN: osv-scanner install failed"
+elif command -v go &>/dev/null; then
+  go install github.com/google/osv-scanner/cmd/osv-scanner@latest || echo "  WARN: osv-scanner install failed"
+else
+  echo "  INFO: Install osv-scanner from https://github.com/google/osv-scanner/releases"
+fi
+
+# Trivy
+echo "[SCA 3/4] Installing Trivy..."
+if command -v brew &>/dev/null; then
+  brew install aquasecurity/trivy/trivy || echo "  WARN: trivy install failed"
+elif [ "$OS" = "Linux" ]; then
+  curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin || echo "  WARN: trivy install failed"
+else
+  echo "  INFO: Install trivy from https://github.com/aquasecurity/trivy/releases"
+fi
+
+# npm audit (bundled with Node/npm)
+echo "[SCA 4/4] Checking npm audit..."
+if command -v npm &>/dev/null; then
+  echo "  OK: npm found (npm audit is built-in)"
+else
+  echo "  INFO: npm not found. Install Node.js to enable npm audit: https://nodejs.org"
+fi
+
+echo ""
 echo "=== Setup complete ==="
 echo "Run: python app.py"
