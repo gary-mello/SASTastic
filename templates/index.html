@@ -639,17 +639,22 @@ function renderSummaryCards() {
 }
 
 function renderScannerStatus() {
-  const allScanners = ['semgrep','bandit','gosec','gitleaks','trufflehog','checkov','brakeman','flawfinder','hadolint'];
+  const allScanners = [
+    {name:'semgrep',type:'SAST'},{name:'bandit',type:'SAST'},{name:'gosec',type:'SAST'},
+    {name:'gitleaks',type:'Secrets'},{name:'trufflehog',type:'Secrets'},
+    {name:'checkov',type:'IaC'},{name:'brakeman',type:'SAST'},{name:'flawfinder',type:'SAST'},{name:'hadolint',type:'IaC'},
+    {name:'osv-scanner',type:'SCA'},{name:'trivy',type:'SCA'},{name:'pip-audit',type:'SCA'},{name:'npm-audit',type:'SCA'},
+  ];
   const el = document.getElementById('scannerStatus');
-  el.innerHTML = allScanners.map(s => {
-    const ran = scannerRan.includes(s);
-    const skipped = scannerSkipped.includes(s);
+  el.innerHTML = allScanners.map(({name, type}) => {
+    const ran = scannerRan.includes(name);
+    const skipped = scannerSkipped.includes(name);
     const status = ran ? 'ran' : skipped ? 'skipped' : 'n/a';
     const label = ran ? 'ran' : skipped ? 'skipped' : 'n/a';
     return `<div class="scanner-item">
       <div class="scanner-dot ${status}"></div>
-      <span class="scanner-name">${s}</span>
-      <span class="scanner-status">${label}</span>
+      <span class="scanner-name">${name}</span>
+      <span class="scanner-status" style="font-size:0.7rem;color:var(--text2)">${type} · ${label}</span>
     </div>`;
   }).join('');
 
