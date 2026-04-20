@@ -235,6 +235,10 @@
         </svg>
         <span id="userLogin"></span>
       </span>
+      <button class="btn btn-primary btn-sm" id="newScanBtn" style="display:none" onclick="showNewScan()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        New Scan
+      </button>
       <button class="btn btn-outline btn-sm" id="clearSessionBtn" style="display:none" onclick="clearSession()">Clear Session</button>
     </div>
   </nav>
@@ -427,8 +431,9 @@ async function connectGitHub() {
     document.getElementById('userLogin').textContent = data.user;
     document.getElementById('userBadge').style.display = 'flex';
     document.getElementById('clearSessionBtn').style.display = 'inline-flex';
-    showScreen('screenRepos');
-    loadRepos();
+    document.getElementById('newScanBtn').style.display = 'inline-flex';
+    showScreen('screenResults');
+    switchTab('history');
   } catch (e) {
     err.textContent = e.message;
     err.style.display = 'block';
@@ -442,6 +447,7 @@ async function clearSession() {
   await fetch('/api/logout', { method: 'POST' });
   document.getElementById('userBadge').style.display = 'none';
   document.getElementById('clearSessionBtn').style.display = 'none';
+  document.getElementById('newScanBtn').style.display = 'none';
   document.getElementById('tokenInput').value = '';
   selectedRepos.clear();
   allRepos = [];
@@ -615,6 +621,7 @@ function showResults() {
 
 function showNewScan() {
   showScreen('screenRepos');
+  loadRepos();
 }
 
 // ---- Results ----
