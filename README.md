@@ -1,4 +1,4 @@
-# SASTastic
+# Scanorama
 
 A local CLI + web dashboard that connects to GitHub and runs multiple open-source SAST scanners against selected repositories, aggregating all findings into a unified dashboard.
 
@@ -73,7 +73,7 @@ requirements.txt    Python dependencies
 setup.sh            One-shot installer for all scanners
 templates/
   index.html        Single-page UI (vanilla JS)
-sastastic.db        SQLite scan history (auto-created)
+scanorama.db        SQLite scan history (auto-created)
 ```
 
 ## Port

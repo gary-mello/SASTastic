@@ -19,7 +19,7 @@ app = Flask(__name__)
 app.secret_key = os.urandom(32)
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "sastastic.db")
+DB_PATH = os.path.join(os.path.dirname(__file__), "scanorama.db")
 
 # In-memory scan state keyed by scan_id
 _scans = {}  # scan_id -> {"status": ..., "queue": Queue, "findings": [], "ran": [], "skipped": []}

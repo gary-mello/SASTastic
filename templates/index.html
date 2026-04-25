@@ -3,30 +3,32 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SASTastic</title>
+<title>Scanorama</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0d0f14;
-    --bg2: #151820;
-    --bg3: #1c2030;
-    --border: #2a2f3d;
-    --text: #e2e8f0;
-    --text2: #8892a4;
-    --accent: #4f8ef7;
-    --accent2: #3a6fd8;
-    --critical: #ff4757;
-    --high: #ff6b6b;
-    --medium: #ffa502;
-    --low: #ffd32a;
-    --info: #747d8c;
-    --success: #2ed573;
+    --bg: #0F172A;
+    --bg2: #1E293B;
+    --bg3: #273548;
+    --border: #334155;
+    --text: #F1F5F9;
+    --text2: #94A3B8;
+    --accent: #22C55E;
+    --accent2: #16A34A;
+    --critical: #F43F5E;
+    --high: #F97316;
+    --medium: #EAB308;
+    --low: #84CC16;
+    --info: #64748B;
+    --success: #22C55E;
     --radius: 8px;
     --shadow: 0 4px 24px rgba(0,0,0,0.4);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; }
 
-  /* Layout */
   #app { display: flex; flex-direction: column; min-height: 100vh; }
   .navbar { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; }
   .navbar-brand { display: flex; align-items: center; gap: 10px; font-size: 1.2rem; font-weight: 700; color: var(--accent); }
@@ -35,22 +37,19 @@
   .user-badge { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text2); }
   .main { flex: 1; padding: 32px 24px; max-width: 1400px; margin: 0 auto; width: 100%; }
 
-  /* Screens */
   .screen { display: none; }
   .screen.active { display: block; }
 
-  /* Cards */
-  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+  .card { background: var(--bg2); border: 1px solid var(--border); border-top: 1px solid rgba(255,255,255,0.07); border-radius: var(--radius); padding: 24px; }
   .card-sm { padding: 16px; }
 
-  /* Token screen */
   .token-screen { display: flex; align-items: center; justify-content: center; min-height: 70vh; }
   .token-card { width: 100%; max-width: 440px; text-align: center; }
   .token-card h1 { font-size: 2rem; margin-bottom: 8px; }
   .token-card .subtitle { color: var(--text2); margin-bottom: 32px; font-size: 0.95rem; }
-  .logo-icon { font-size: 3rem; margin-bottom: 16px; }
+  .logo-icon { display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
+  .logo-icon svg { filter: drop-shadow(0 0 12px rgba(34,197,94,0.4)); }
 
-  /* Forms */
   .form-group { margin-bottom: 16px; text-align: left; }
   .form-group label { display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text2); font-weight: 500; }
   input[type="password"], input[type="text"], input[type="search"] {
@@ -66,18 +65,15 @@
   .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
   .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
   .btn-danger { background: transparent; color: var(--high); border: 1px solid var(--high); }
-  .btn-danger:hover { background: rgba(255,107,107,0.1); }
+  .btn-danger:hover { background: rgba(249,115,22,0.1); }
   .btn-sm { padding: 6px 14px; font-size: 0.85rem; }
   .btn-full { width: 100%; justify-content: center; }
 
-  /* Spinner */
   .spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
     border-radius: 50%; animation: spin 0.7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* Repo selection */
-  .repo-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: gap; }
-  .repo-header h2 { font-size: 1.4rem; }
+  .repo-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
   .repo-search { margin-bottom: 16px; position: relative; }
   .repo-search svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text2); pointer-events: none; }
   .repo-search input { padding-left: 38px; }
@@ -86,7 +82,7 @@
     border-bottom: 1px solid var(--border); transition: background 0.15s; }
   .repo-item:last-child { border-bottom: none; }
   .repo-item:hover { background: var(--bg3); }
-  .repo-item.selected { background: rgba(79,142,247,0.08); }
+  .repo-item.selected { background: rgba(34,197,94,0.07); }
   .repo-item input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
   .repo-info { flex: 1; min-width: 0; }
   .repo-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -94,44 +90,57 @@
   .lang-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.75rem;
     background: var(--bg3); border: 1px solid var(--border); color: var(--text2); }
   .private-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.75rem;
-    background: rgba(255,165,2,0.15); color: var(--medium); border: 1px solid rgba(255,165,2,0.3); }
+    background: rgba(234,179,8,0.12); color: var(--medium); border: 1px solid rgba(234,179,8,0.3); }
   .scan-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 20px; }
   .selected-count { color: var(--text2); font-size: 0.9rem; }
 
-  /* Progress screen */
+  /* Progress */
   .progress-header { margin-bottom: 24px; }
   .progress-header h2 { font-size: 1.4rem; }
   .progress-header p { color: var(--text2); margin-top: 4px; }
-  .progress-bar-wrap { background: var(--bg3); border-radius: 20px; height: 8px; margin: 20px 0; overflow: hidden; }
-  .progress-bar { height: 100%; background: linear-gradient(90deg, var(--accent), #6fa8ff); border-radius: 20px;
-    transition: width 0.3s; width: 0%; }
-  .log-output { background: #0a0c10; border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 16px; height: 320px; overflow-y: auto; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82rem; }
-  .log-line { padding: 2px 0; }
+  .progress-bar-wrap { background: var(--bg3); border-radius: 20px; height: 8px; margin: 20px 0; position: relative; overflow: visible; }
+  .progress-bar { height: 100%; background: linear-gradient(90deg, var(--accent), #86efac); border-radius: 20px;
+    transition: width 0.3s; width: 0%; position: relative; overflow: hidden; }
+  .scan-beam {
+    position: absolute; top: -4px; bottom: -4px; width: 4px;
+    background: rgba(255,255,255,0.9); border-radius: 2px;
+    box-shadow: 0 0 6px var(--accent), 0 0 16px var(--accent), 0 0 32px rgba(34,197,94,0.6);
+    opacity: 0; transition: opacity 0.3s, left 0.3s;
+    pointer-events: none; transform: translateX(-50%);
+  }
+  .log-output { background: #080e1a; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px; height: 320px; overflow-y: auto; font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace; font-size: 0.82rem; }
+  .log-line { padding: 2px 0; white-space: pre-wrap; word-break: break-all; }
   .log-line.info { color: var(--text2); }
-  .log-line.clone { color: var(--accent); }
+  .log-line.clone { color: #60A5FA; }
   .log-line.scanner { color: var(--success); }
   .log-line.error { color: var(--high); }
   .log-line.done { color: var(--success); font-weight: 600; }
 
-  /* Results dashboard */
+  /* Results */
   .results-layout { display: grid; grid-template-columns: 220px 1fr; gap: 20px; }
   @media (max-width: 900px) { .results-layout { grid-template-columns: 1fr; } }
 
-  /* Summary cards */
   .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
-  .summary-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 16px; text-align: center; }
-  .summary-card .count { font-size: 2rem; font-weight: 700; }
+  .summary-card { background: var(--bg2); border: 1px solid var(--border); border-top: 1px solid rgba(255,255,255,0.07);
+    border-radius: var(--radius); padding: 16px; text-align: center; position: relative; overflow: hidden; }
+  .summary-card .card-icon { margin-bottom: 8px; opacity: 0.7; }
+  .summary-card .count { font-size: 2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
   .summary-card .label { font-size: 0.8rem; color: var(--text2); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
   .summary-card.critical .count { color: var(--critical); }
+  .summary-card.critical .card-icon { color: var(--critical); }
   .summary-card.high .count { color: var(--high); }
+  .summary-card.high .card-icon { color: var(--high); }
   .summary-card.medium .count { color: var(--medium); }
+  .summary-card.medium .card-icon { color: var(--medium); }
   .summary-card.low .count { color: var(--low); }
+  .summary-card.low .card-icon { color: var(--low); }
   .summary-card.info .count { color: var(--info); }
+  .summary-card.info .card-icon { color: var(--info); }
   .summary-card.total .count { color: var(--accent); }
+  .summary-card.total .card-icon { color: var(--accent); }
+  .card-arc { position: absolute; top: 8px; right: 8px; opacity: 0.55; pointer-events: none; }
 
-  /* Sidebar */
   .sidebar { display: flex; flex-direction: column; gap: 16px; }
   .sidebar h3 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text2); margin-bottom: 10px; }
   .scanner-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 0.88rem; }
@@ -141,7 +150,6 @@
   .scanner-name { flex: 1; }
   .scanner-status { font-size: 0.75rem; color: var(--text2); }
 
-  /* Filters */
   .filters { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
   .filter-select { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius);
     color: var(--text); padding: 6px 12px; font-size: 0.85rem; cursor: pointer; }
@@ -149,56 +157,66 @@
   .filters .spacer { flex: 1; }
   .export-btns { display: flex; gap: 8px; }
 
-  /* Findings table */
-  .table-wrap { overflow-x: auto; }
+  /* Table — virtual scroll */
+  .table-wrap { overflow-x: auto; max-height: 520px; overflow-y: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
   thead th { background: var(--bg3); padding: 10px 14px; text-align: left; font-size: 0.78rem;
     text-transform: uppercase; letter-spacing: 0.06em; color: var(--text2); border-bottom: 1px solid var(--border);
-    cursor: pointer; user-select: none; white-space: nowrap; }
+    cursor: pointer; user-select: none; white-space: nowrap; position: sticky; top: 0; z-index: 1; }
   thead th:hover { color: var(--text); }
   thead th .sort-icon { margin-left: 4px; opacity: 0.4; }
   thead th.sorted .sort-icon { opacity: 1; }
   tbody tr { border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; }
   tbody tr:hover { background: var(--bg3); }
-  tbody tr.expanded { background: rgba(79,142,247,0.05); }
+  tbody tr.expanded { background: rgba(34,197,94,0.04); }
   tbody td { padding: 10px 14px; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .expand-row td { padding: 0; background: #0a0c10; cursor: default; }
-  .expand-content { padding: 16px 20px; }
-  .expand-content .desc { color: var(--text2); margin-bottom: 12px; font-size: 0.875rem; line-height: 1.5; }
-  .expand-content pre { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px;
-    padding: 12px; overflow-x: auto; font-size: 0.8rem; font-family: 'SF Mono', 'Fira Code', monospace; color: #a8d0ff; }
-  .corroborated-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem;
-    background: rgba(79,142,247,0.2); color: var(--accent); margin-left: 6px; }
+  tbody tr[data-sev="CRITICAL"] { box-shadow: inset 3px 0 0 var(--critical); }
+  tbody tr[data-sev="HIGH"]     { box-shadow: inset 3px 0 0 var(--high); }
+  tbody tr[data-sev="MEDIUM"]   { box-shadow: inset 3px 0 0 var(--medium); }
+  tbody tr[data-sev="LOW"]      { box-shadow: inset 3px 0 0 var(--low); }
+  tbody tr[data-sev="INFO"]     { box-shadow: inset 3px 0 0 var(--info); }
+  .vs-spacer td { padding: 0 !important; border: none !important; }
 
-  /* Severity badges */
+  .expand-row td { padding: 0; background: #080e1a; cursor: default; }
+  .expand-content { padding: 16px 20px; }
+  .expand-content .desc { color: var(--text2); margin-bottom: 12px; font-size: 0.875rem; line-height: 1.6; }
+  .expand-content pre { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px;
+    padding: 12px; overflow-x: auto; font-size: 0.8rem; font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace; color: #93C5FD; }
+  .corroborated-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem;
+    background: rgba(34,197,94,0.15); color: var(--accent); border: 1px solid rgba(34,197,94,0.3); margin-left: 6px; }
+
   .sev { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700;
     text-transform: uppercase; letter-spacing: 0.04em; }
-  .sev-CRITICAL { background: rgba(255,71,87,0.2); color: var(--critical); border: 1px solid rgba(255,71,87,0.4); }
-  .sev-HIGH { background: rgba(255,107,107,0.2); color: var(--high); border: 1px solid rgba(255,107,107,0.4); }
-  .sev-MEDIUM { background: rgba(255,165,2,0.2); color: var(--medium); border: 1px solid rgba(255,165,2,0.4); }
-  .sev-LOW { background: rgba(255,211,42,0.2); color: var(--low); border: 1px solid rgba(255,211,42,0.3); }
-  .sev-INFO { background: rgba(116,125,140,0.2); color: var(--info); border: 1px solid rgba(116,125,140,0.3); }
+  .sev-CRITICAL { background: rgba(244,63,94,0.15); color: var(--critical); border: 1px solid rgba(244,63,94,0.35); }
+  .sev-HIGH     { background: rgba(249,115,22,0.15); color: var(--high);     border: 1px solid rgba(249,115,22,0.35); }
+  .sev-MEDIUM   { background: rgba(234,179,8,0.15);  color: var(--medium);   border: 1px solid rgba(234,179,8,0.35); }
+  .sev-LOW      { background: rgba(132,204,22,0.15); color: var(--low);      border: 1px solid rgba(132,204,22,0.35); }
+  .sev-INFO     { background: rgba(100,116,139,0.15);color: var(--info);     border: 1px solid rgba(100,116,139,0.3); }
 
-  /* History */
   .history-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
   .history-table th { background: var(--bg3); padding: 10px 14px; text-align: left; font-size: 0.78rem;
     text-transform: uppercase; letter-spacing: 0.06em; color: var(--text2); border-bottom: 1px solid var(--border); }
   .history-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
   .history-table tr:hover td { background: var(--bg3); cursor: pointer; }
 
-  /* Tabs / nav */
-  .tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 1px solid var(--border); }
-  .tab { padding: 10px 18px; cursor: pointer; font-size: 0.9rem; color: var(--text2); border-bottom: 2px solid transparent;
-    margin-bottom: -1px; transition: all 0.2s; }
+  /* Tabs with sliding indicator */
+  .tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 1px solid var(--border); position: relative; }
+  .tab { padding: 10px 18px; cursor: pointer; font-size: 0.9rem; color: var(--text2);
+    border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.2s; }
   .tab:hover { color: var(--text); }
-  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab.active { color: var(--accent); border-bottom-color: transparent; }
+  .tab-indicator {
+    position: absolute; bottom: 0; height: 2px; left: 0; width: 0;
+    background: var(--accent); border-radius: 1px; pointer-events: none;
+    transition: left 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                width 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
 
-  /* Misc */
   .empty-state { text-align: center; padding: 60px 20px; color: var(--text2); }
   .empty-state svg { margin-bottom: 16px; opacity: 0.3; }
   .empty-state p { font-size: 0.95rem; }
-  .error-msg { background: rgba(255,107,107,0.1); border: 1px solid rgba(255,107,107,0.3);
-    border-radius: var(--radius); padding: 12px 16px; color: var(--high); margin-top: 12px; font-size: 0.875rem; }
+  .error-msg { background: rgba(244,63,94,0.08); border: 1px solid rgba(244,63,94,0.3);
+    border-radius: var(--radius); padding: 12px 16px; color: var(--critical); margin-top: 12px; font-size: 0.875rem; }
   .mt16 { margin-top: 16px; }
   .gap8 { gap: 8px; }
   .flex { display: flex; }
@@ -206,26 +224,71 @@
   .justify-between { justify-content: space-between; }
   .text-muted { color: var(--text2); }
   .text-sm { font-size: 0.85rem; }
+  .new-scan-btn { margin-top: 16px; }
 
-  /* Scrollbar */
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: var(--bg2); }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: #3a4055; }
+  ::-webkit-scrollbar-thumb:hover { background: #475569; }
 
-  .new-scan-btn { margin-top: 16px; }
+  /* ─── OVERDRIVE: View Transitions ─── */
+  @media (prefers-reduced-motion: no-preference) {
+    ::view-transition-old(root) { animation: 180ms ease-in both vt-out; }
+    ::view-transition-new(root) { animation: 280ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in; }
+    @keyframes vt-out { to { opacity: 0; transform: translateY(-6px) scale(0.985); } }
+    @keyframes vt-in  { from { opacity: 0; transform: translateY(8px) scale(0.99); } }
+  }
+
+  /* ─── OVERDRIVE: Spring expand row ─── */
+  @media (prefers-reduced-motion: no-preference) {
+    .expand-row { animation: expandSpring 320ms cubic-bezier(0.34, 1.56, 0.64, 1) both; transform-origin: top center; }
+    @keyframes expandSpring {
+      from { opacity: 0; transform: scaleY(0.3); }
+      to   { opacity: 1; transform: scaleY(1); }
+    }
+  }
+
+  /* ─── OVERDRIVE: Staggered card entry + count animation ─── */
+  @media (prefers-reduced-motion: no-preference) {
+    .summary-card { animation: cardIn 380ms ease-out both; }
+    .summary-card:nth-child(1) { animation-delay: 0ms; }
+    .summary-card:nth-child(2) { animation-delay: 55ms; }
+    .summary-card:nth-child(3) { animation-delay: 110ms; }
+    .summary-card:nth-child(4) { animation-delay: 165ms; }
+    .summary-card:nth-child(5) { animation-delay: 220ms; }
+    .summary-card:nth-child(6) { animation-delay: 275ms; }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(16px) scale(0.93); }
+      to   { opacity: 1; transform: none; }
+    }
+  }
+
+  /* ─── OVERDRIVE: Progress screen theatre ─── */
+  #screenProgress.active { position: relative; }
+  #screenProgress.active::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(34,197,94,0.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(34,197,94,0.018) 1px, transparent 1px);
+    background-size: 36px 36px;
+    pointer-events: none; z-index: 0;
+    animation: gridPulse 5s ease-in-out infinite alternate;
+  }
+  @media (prefers-reduced-motion: reduce) { #screenProgress.active::before { display: none; } }
+  @keyframes gridPulse { from { opacity: 0.4; } to { opacity: 1; } }
+  #screenProgress.active > * { position: relative; z-index: 1; }
 </style>
 </head>
 <body>
 <div id="app">
-  <!-- Navbar -->
   <nav class="navbar">
     <div class="navbar-brand">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
         <path d="m9 12 2 2 4-4"/>
       </svg>
-      SASTastic
+      Scanorama
     </div>
     <div class="navbar-right">
       <span class="user-badge" id="userBadge" style="display:none">
@@ -249,8 +312,13 @@
     <div id="screenToken" class="screen active">
       <div class="token-screen">
         <div class="card token-card">
-          <div class="logo-icon">🛡️</div>
-          <h1>SASTastic</h1>
+          <div class="logo-icon">
+            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <path d="m9 12 2 2 4-4"/>
+            </svg>
+          </div>
+          <h1>Scanorama</h1>
           <p class="subtitle">Connect your GitHub account to start scanning repositories for security vulnerabilities.</p>
           <div class="form-group">
             <label>GitHub Personal Access Token</label>
@@ -276,17 +344,15 @@
           Refresh
         </button>
       </div>
-
       <div class="card" style="margin-bottom:16px">
         <div class="repo-search">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text2)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="search" id="repoSearch" placeholder="Search repositories..." style="padding-left:38px" oninput="filterRepos()" >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="search" id="repoSearch" placeholder="Search repositories..." style="padding-left:38px" oninput="filterRepos()">
         </div>
         <div class="repo-list" id="repoList">
           <div class="empty-state"><p>Loading repositories...</p></div>
         </div>
       </div>
-
       <div class="scan-footer">
         <span class="selected-count" id="selectedCount">0 repositories selected</span>
         <button class="btn btn-primary" id="scanBtn" onclick="startScan()" disabled>
@@ -300,10 +366,11 @@
     <div id="screenProgress" class="screen">
       <div class="progress-header">
         <h2>Scanning in Progress</h2>
-        <p class="text-muted">Running SAST scanners across selected repositories...</p>
+        <p class="text-muted">Running security scanners across selected repositories...</p>
       </div>
       <div class="progress-bar-wrap">
         <div class="progress-bar" id="progressBar"></div>
+        <div class="scan-beam" id="scanBeam"></div>
       </div>
       <div class="log-output" id="logOutput"></div>
       <div class="mt16 flex gap8">
@@ -316,6 +383,7 @@
       <div class="tabs">
         <div class="tab active" onclick="switchTab('findings')">Findings</div>
         <div class="tab" onclick="switchTab('history')">Scan History</div>
+        <div class="tab-indicator" id="tabIndicator"></div>
       </div>
 
       <div id="tabFindings">
@@ -351,7 +419,7 @@
               </div>
             </div>
             <div class="card" style="padding:0;overflow:hidden">
-              <div class="table-wrap">
+              <div class="table-wrap" id="tableWrap">
                 <table id="findingsTable">
                   <thead>
                     <tr>
@@ -367,7 +435,7 @@
                 </table>
               </div>
               <div class="empty-state" id="noFindings" style="display:none">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
                 <p>No findings match the current filters.</p>
               </div>
             </div>
@@ -392,11 +460,10 @@
       </div>
     </div>
 
-  </div><!-- /main -->
-</div><!-- /app -->
+  </div>
+</div>
 
 <script>
-// State
 let allFindings = [];
 let filteredFindings = [];
 let allRepos = [];
@@ -409,8 +476,19 @@ let scannerRan = [];
 let scannerSkipped = [];
 
 const SEV_ORDER = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3, INFO: 4 };
+const VS_ROW_H = 43;
+const REDUCED_MOTION = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-// ---- Auth ----
+const ARC_COLORS = {
+  'total':    '#22C55E',
+  'CRITICAL': '#F43F5E',
+  'HIGH':     '#F97316',
+  'MEDIUM':   '#EAB308',
+  'LOW':      '#84CC16',
+  'INFO':     '#64748B',
+};
+
+// ── Auth ──
 async function connectGitHub() {
   const token = document.getElementById('tokenInput').value.trim();
   if (!token) return;
@@ -419,11 +497,9 @@ async function connectGitHub() {
   err.style.display = 'none';
   btn.disabled = true;
   btn.innerHTML = '<div class="spinner"></div> Connecting...';
-
   try {
     const res = await fetch('/api/connect', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token }),
     });
     const data = await res.json();
@@ -455,7 +531,7 @@ async function clearSession() {
   showScreen('screenToken');
 }
 
-// ---- Repos ----
+// ── Repos ──
 async function loadRepos() {
   const list = document.getElementById('repoList');
   list.innerHTML = '<div class="empty-state"><p>Loading repositories...</p></div>';
@@ -492,7 +568,6 @@ function renderRepos(repos) {
 
 function toggleRepo(fullName, event) {
   if (event.target.tagName === 'INPUT') {
-    // Let checkbox handle it, but sync state
     setTimeout(() => {
       if (event.target.checked) selectedRepos.add(fullName);
       else selectedRepos.delete(fullName);
@@ -504,9 +579,7 @@ function toggleRepo(fullName, event) {
   }
   if (selectedRepos.has(fullName)) selectedRepos.delete(fullName);
   else selectedRepos.add(fullName);
-  // Re-render the clicked item
-  const items = document.querySelectorAll('.repo-item');
-  items.forEach(item => {
+  document.querySelectorAll('.repo-item').forEach(item => {
     const cb = item.querySelector('input[type=checkbox]');
     const name = cb ? item.querySelector('.repo-name').textContent : null;
     if (name === fullName) {
@@ -528,35 +601,28 @@ function updateSelectedCount() {
   document.getElementById('scanBtn').disabled = n === 0;
 }
 
-// ---- Scan ----
+// ── Scan ──
 async function startScan() {
   if (selectedRepos.size === 0) return;
   const repos = allRepos.filter(r => selectedRepos.has(r.full_name));
   showScreen('screenProgress');
-
   const logEl = document.getElementById('logOutput');
   logEl.innerHTML = '';
-  document.getElementById('progressBar').style.width = '0%';
+  setProgress(0);
   document.getElementById('viewResultsBtn').style.display = 'none';
-
   let progress = 5;
   setProgress(progress);
-
   try {
     const res = await fetch('/api/scan', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ repos }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error);
     currentScanId = data.scan_id;
-
-    // SSE stream
     const evtSource = new EventSource(`/api/scan/${currentScanId}/stream`);
     const totalSteps = repos.length * 10;
     let step = 0;
-
     evtSource.onmessage = (e) => {
       if (e.data === '__DONE__') {
         evtSource.close();
@@ -577,28 +643,45 @@ async function startScan() {
         setProgress(Math.min(95, 5 + (step / totalSteps) * 90));
       } catch {}
     };
-
     evtSource.onerror = () => {
       evtSource.close();
       addLog('[heartbeat timeout — scan may still be running]', 'info');
     };
-
   } catch (e) {
     addLog(`Error: ${e.message}`, 'error');
   }
 }
 
 function setProgress(pct) {
-  document.getElementById('progressBar').style.width = pct + '%';
+  const bar = document.getElementById('progressBar');
+  const beam = document.getElementById('scanBeam');
+  bar.style.width = pct + '%';
+  if (beam) {
+    beam.style.left = pct + '%';
+    beam.style.opacity = (pct > 0 && pct < 100) ? '1' : '0';
+  }
 }
 
 function addLog(msg, cls = 'info') {
   const el = document.getElementById('logOutput');
   const line = document.createElement('div');
   line.className = `log-line ${cls}`;
-  line.textContent = msg;
   el.appendChild(line);
-  el.scrollTop = el.scrollHeight;
+  if (REDUCED_MOTION()) {
+    line.textContent = msg;
+    el.scrollTop = el.scrollHeight;
+    return;
+  }
+  let i = 0;
+  const len = msg.length;
+  const chunk = Math.max(2, Math.ceil(len / 18));
+  const tick = () => {
+    i = Math.min(i + chunk, len);
+    line.textContent = msg.slice(0, i);
+    el.scrollTop = el.scrollHeight;
+    if (i < len) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
 }
 
 async function loadResults() {
@@ -624,7 +707,7 @@ function showNewScan() {
   loadRepos();
 }
 
-// ---- Results ----
+// ── Results ──
 function renderResults() {
   renderSummaryCards();
   renderScannerStatus();
@@ -635,14 +718,105 @@ function renderResults() {
 function renderSummaryCards() {
   const counts = { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 };
   allFindings.forEach(f => { counts[f.severity] = (counts[f.severity] || 0) + 1; });
-  document.getElementById('summarycards').innerHTML = `
-    <div class="summary-card total"><div class="count">${allFindings.length}</div><div class="label">Total</div></div>
-    <div class="summary-card critical"><div class="count">${counts.CRITICAL}</div><div class="label">Critical</div></div>
-    <div class="summary-card high"><div class="count">${counts.HIGH}</div><div class="label">High</div></div>
-    <div class="summary-card medium"><div class="count">${counts.MEDIUM}</div><div class="label">Medium</div></div>
-    <div class="summary-card low"><div class="count">${counts.LOW}</div><div class="label">Low</div></div>
-    <div class="summary-card info"><div class="count">${counts.INFO}</div><div class="label">Info</div></div>
-  `;
+  const total = allFindings.length;
+
+  const icons = {
+    total:    `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
+    CRITICAL: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
+    HIGH:     `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+    MEDIUM:   `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+    LOW:      `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`,
+    INFO:     `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="8"/><line x1="12" y1="12" x2="12" y2="16"/></svg>`,
+  };
+
+  const cards = [
+    { key: 'total',    cls: 'total',    count: total,           label: 'Total' },
+    { key: 'CRITICAL', cls: 'critical', count: counts.CRITICAL, label: 'Critical' },
+    { key: 'HIGH',     cls: 'high',     count: counts.HIGH,     label: 'High' },
+    { key: 'MEDIUM',   cls: 'medium',   count: counts.MEDIUM,   label: 'Medium' },
+    { key: 'LOW',      cls: 'low',      count: counts.LOW,      label: 'Low' },
+    { key: 'INFO',     cls: 'info',     count: counts.INFO,     label: 'Info' },
+  ];
+
+  document.getElementById('summarycards').innerHTML = cards.map(c => `
+    <div class="summary-card ${c.cls}">
+      <canvas class="card-arc" width="32" height="32" data-key="${c.key}" data-count="${c.count}" data-total="${total}"></canvas>
+      <div class="card-icon">${icons[c.key]}</div>
+      <div class="count" data-target="${c.count}">0</div>
+      <div class="label">${c.label}</div>
+    </div>
+  `).join('');
+
+  document.querySelectorAll('.summary-card .count[data-target]').forEach(el => {
+    animateNumber(el, parseInt(el.dataset.target, 10));
+  });
+
+  document.querySelectorAll('.card-arc').forEach(canvas => {
+    const delay = REDUCED_MOTION() ? 0 : parseInt(canvas.closest('.summary-card').style.animationDelay || '0') + 300;
+    setTimeout(() => drawArc(canvas, parseInt(canvas.dataset.count), parseInt(canvas.dataset.total), ARC_COLORS[canvas.dataset.key] || '#22C55E'), delay);
+  });
+}
+
+function animateNumber(el, to, duration = 700) {
+  if (REDUCED_MOTION()) { el.textContent = to; return; }
+  const start = performance.now();
+  const tick = now => {
+    const t = Math.min((now - start) / duration, 1);
+    el.textContent = Math.round(to * (1 - Math.pow(1 - t, 3)));
+    if (t < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+function drawArc(canvas, value, total, color) {
+  const dpr = window.devicePixelRatio || 1;
+  const sz = 32;
+  canvas.width = sz * dpr;
+  canvas.height = sz * dpr;
+  canvas.style.width = sz + 'px';
+  canvas.style.height = sz + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const cx = sz / 2, cy = sz / 2, r = sz / 2 - 3;
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  if (total > 0 && value > 0) {
+    if (REDUCED_MOTION()) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + (value / total) * Math.PI * 2);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    } else {
+      const targetAngle = (value / total) * Math.PI * 2;
+      const start = performance.now();
+      const dur = 600;
+      const frame = now => {
+        const t = Math.min((now - start) / dur, 1);
+        const ease = 1 - Math.pow(1 - t, 3);
+        ctx.clearRect(0, 0, sz, sz);
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + targetAngle * ease);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+        if (t < 1) requestAnimationFrame(frame);
+      };
+      requestAnimationFrame(frame);
+    }
+  }
 }
 
 function renderScannerStatus() {
@@ -652,23 +826,19 @@ function renderScannerStatus() {
     {name:'checkov',type:'IaC'},{name:'brakeman',type:'SAST'},{name:'flawfinder',type:'SAST'},{name:'hadolint',type:'IaC'},
     {name:'osv-scanner',type:'SCA'},{name:'trivy',type:'SCA'},{name:'pip-audit',type:'SCA'},{name:'npm-audit',type:'SCA'},
   ];
-  const el = document.getElementById('scannerStatus');
-  el.innerHTML = allScanners.map(({name, type}) => {
+  document.getElementById('scannerStatus').innerHTML = allScanners.map(({name, type}) => {
     const ran = scannerRan.includes(name);
     const skipped = scannerSkipped.includes(name);
     const status = ran ? 'ran' : skipped ? 'skipped' : 'n/a';
-    const label = ran ? 'ran' : skipped ? 'skipped' : 'n/a';
     return `<div class="scanner-item">
       <div class="scanner-dot ${status}"></div>
       <span class="scanner-name">${name}</span>
-      <span class="scanner-status" style="font-size:0.7rem;color:var(--text2)">${type} · ${label}</span>
+      <span class="scanner-status">${type} · ${status}</span>
     </div>`;
   }).join('');
 
-  // Quick filters by severity
-  const qf = document.getElementById('quickFilters');
   const sevs = ['CRITICAL','HIGH','MEDIUM','LOW','INFO'];
-  qf.innerHTML = sevs.map(s => {
+  document.getElementById('quickFilters').innerHTML = sevs.map(s => {
     const cnt = allFindings.filter(f => f.severity === s).length;
     return `<div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:4px 8px;border-radius:4px;transition:background 0.15s"
       onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''"
@@ -687,10 +857,8 @@ function quickFilterSev(sev) {
 function populateFilterDropdowns() {
   const scanners = [...new Set(allFindings.map(f => f.scanner))].sort();
   const repos = [...new Set(allFindings.map(f => f.repo))].sort();
-  const sSel = document.getElementById('filterScanner');
-  const rSel = document.getElementById('filterRepo');
-  sSel.innerHTML = '<option value="">All Scanners</option>' + scanners.map(s => `<option>${esc(s)}</option>`).join('');
-  rSel.innerHTML = '<option value="">All Repos</option>' + repos.map(r => `<option>${esc(r)}</option>`).join('');
+  document.getElementById('filterScanner').innerHTML = '<option value="">All Scanners</option>' + scanners.map(s => `<option>${esc(s)}</option>`).join('');
+  document.getElementById('filterRepo').innerHTML = '<option value="">All Repos</option>' + repos.map(r => `<option>${esc(r)}</option>`).join('');
 }
 
 function applyFilters() {
@@ -702,6 +870,7 @@ function applyFilters() {
     (!scanner || f.scanner === scanner) &&
     (!repo || f.repo === repo)
   );
+  expandedRow = null;
   sortFindings();
   renderTable();
 }
@@ -717,66 +886,81 @@ function sortBy(col) {
 function sortFindings() {
   filteredFindings.sort((a, b) => {
     let av = a[sortCol] ?? '', bv = b[sortCol] ?? '';
-    if (sortCol === 'severity') {
-      av = SEV_ORDER[av] ?? 99;
-      bv = SEV_ORDER[bv] ?? 99;
-    }
-    if (av < bv) return -1 * sortDir;
-    if (av > bv) return 1 * sortDir;
-    return 0;
+    if (sortCol === 'severity') { av = SEV_ORDER[av] ?? 99; bv = SEV_ORDER[bv] ?? 99; }
+    return av < bv ? -sortDir : av > bv ? sortDir : 0;
   });
 }
 
+// ── Virtual scrolling table ──
 function renderTable() {
   const tbody = document.getElementById('findingsBody');
   const noFind = document.getElementById('noFindings');
-  expandedRow = null;
-
   if (!filteredFindings.length) {
     tbody.innerHTML = '';
     noFind.style.display = 'block';
     return;
   }
   noFind.style.display = 'none';
+  const wrap = document.getElementById('tableWrap');
+  if (wrap && !wrap._vsAttached) {
+    wrap._vsAttached = true;
+    wrap.addEventListener('scroll', () => vsRender(wrap.scrollTop), { passive: true });
+  }
+  vsRender(wrap ? wrap.scrollTop : 0);
+}
 
-  tbody.innerHTML = filteredFindings.map((f, i) => `
-    <tr onclick="toggleExpand(${i}, this)" data-idx="${i}">
+function vsRender(scrollTop) {
+  const tbody = document.getElementById('findingsBody');
+  const wrap = document.getElementById('tableWrap');
+  if (!tbody || !filteredFindings.length) return;
+
+  const viewH = wrap ? wrap.clientHeight : 520;
+  const total = filteredFindings.length;
+  const startIdx = Math.max(0, Math.floor(scrollTop / VS_ROW_H) - 5);
+  const endIdx = Math.min(total, Math.ceil((scrollTop + viewH) / VS_ROW_H) + 5);
+
+  const topPad = startIdx * VS_ROW_H;
+  const botPad = Math.max(0, (total - endIdx) * VS_ROW_H);
+
+  let html = '';
+  if (topPad > 0) html += `<tr class="vs-spacer" style="height:${topPad}px"><td colspan="6"></td></tr>`;
+
+  for (let i = startIdx; i < endIdx; i++) {
+    const f = filteredFindings[i];
+    const isExp = expandedRow === i;
+    html += `<tr onclick="toggleExpand(${i},this)" data-idx="${i}" data-sev="${f.severity}"${isExp ? ' class="expanded"' : ''}>
       <td><span class="sev sev-${f.severity}">${f.severity}</span>${f.corroborated ? '<span class="corroborated-badge">corroborated</span>' : ''}</td>
       <td>${esc(f.scanner)}</td>
       <td title="${esc(f.repo)}">${esc(shortRepo(f.repo))}</td>
       <td title="${esc(f.file)}">${esc(shortPath(f.file))}${f.line ? ':' + f.line : ''}</td>
       <td title="${esc(f.rule_id)}">${esc(shortStr(f.rule_id, 30))}</td>
       <td title="${esc(f.title)}">${esc(shortStr(f.title, 50))}</td>
-    </tr>
-  `).join('');
-}
-
-function toggleExpand(idx, tr) {
-  const existing = document.querySelector('.expand-row');
-  if (existing) {
-    existing.previousElementSibling?.classList.remove('expanded');
-    existing.remove();
+    </tr>`;
+    if (isExp) {
+      html += `<tr class="expand-row"><td colspan="6"><div class="expand-content">
+        <p class="desc">${esc(f.description || f.title)}</p>
+        ${f.code_snippet ? `<pre>${esc(f.code_snippet)}</pre>` : ''}
+        <div style="margin-top:10px;font-size:0.8rem;color:var(--text2)">
+          <strong>File:</strong> ${esc(f.file||'')} &nbsp;
+          <strong>Line:</strong> ${f.line||'N/A'} &nbsp;
+          <strong>Confidence:</strong> ${esc(f.confidence||'')} &nbsp;
+          <strong>Rule:</strong> ${esc(f.rule_id||'')}
+        </div>
+      </div></td></tr>`;
+    }
   }
-  if (expandedRow === idx) { expandedRow = null; return; }
-  expandedRow = idx;
-  tr.classList.add('expanded');
-  const f = filteredFindings[idx];
-  const expandTr = document.createElement('tr');
-  expandTr.className = 'expand-row';
-  expandTr.innerHTML = `<td colspan="6"><div class="expand-content">
-    <p class="desc">${esc(f.description || f.title)}</p>
-    ${f.code_snippet ? `<pre>${esc(f.code_snippet)}</pre>` : ''}
-    <div style="margin-top:10px;font-size:0.8rem;color:var(--text2)">
-      <strong>File:</strong> ${esc(f.file || '')} &nbsp;
-      <strong>Line:</strong> ${f.line || 'N/A'} &nbsp;
-      <strong>Confidence:</strong> ${esc(f.confidence || '')} &nbsp;
-      <strong>Rule:</strong> ${esc(f.rule_id || '')}
-    </div>
-  </div></td>`;
-  tr.after(expandTr);
+
+  if (botPad > 0) html += `<tr class="vs-spacer" style="height:${botPad}px"><td colspan="6"></td></tr>`;
+  tbody.innerHTML = html;
 }
 
-// ---- Export ----
+function toggleExpand(idx) {
+  expandedRow = expandedRow === idx ? null : idx;
+  const wrap = document.getElementById('tableWrap');
+  vsRender(wrap ? wrap.scrollTop : 0);
+}
+
+// ── Export ──
 function exportCSV() {
   const cols = ['severity','scanner','repo','file','line','rule_id','title','description','confidence','corroborated'];
   const rows = [cols.join(',')];
@@ -797,7 +981,7 @@ function download(name, content, type) {
   a.click();
 }
 
-// ---- History ----
+// ── History ──
 async function loadHistory() {
   const res = await fetch('/api/history');
   const data = await res.json();
@@ -831,24 +1015,43 @@ async function loadHistoryScan(scanId) {
   switchTab('findings');
 }
 
-// ---- Tabs ----
+// ── Tabs ──
 function switchTab(tab) {
-  document.querySelectorAll('.tabs .tab').forEach((t, i) => t.classList.toggle('active', i === (tab === 'findings' ? 0 : 1)));
+  const tabs = document.querySelectorAll('.tabs .tab');
+  const idx = tab === 'findings' ? 0 : 1;
+  tabs.forEach((t, i) => t.classList.toggle('active', i === idx));
+
+  const indicator = document.getElementById('tabIndicator');
+  if (indicator && tabs[idx]) {
+    // Defer one frame so tab layout is painted
+    requestAnimationFrame(() => {
+      indicator.style.left = tabs[idx].offsetLeft + 'px';
+      indicator.style.width = tabs[idx].offsetWidth + 'px';
+    });
+  }
+
   document.getElementById('tabFindings').style.display = tab === 'findings' ? 'block' : 'none';
   document.getElementById('tabHistory').style.display = tab === 'history' ? 'block' : 'none';
   if (tab === 'history') loadHistory();
 }
 
-// ---- Helpers ----
+// ── Screen transitions ──
 function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+  const go = () => {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  };
+  if (document.startViewTransition && !REDUCED_MOTION()) {
+    document.startViewTransition(go);
+  } else {
+    go();
+  }
 }
 
+// ── Helpers ──
 function esc(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-
 function shortPath(p) { return (p || '').split('/').slice(-2).join('/') || p || ''; }
 function shortRepo(r) { return (r || '').split('/').slice(-1)[0] || r || ''; }
 function shortStr(s, n) { return s && s.length > n ? s.slice(0, n) + '…' : (s || ''); }
