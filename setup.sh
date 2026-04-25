@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-echo "=== SASTastic Setup ==="
+echo "=== Scanorama Setup ==="
 echo ""
 
 # Python deps

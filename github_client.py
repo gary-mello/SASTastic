@@ -55,7 +55,7 @@ def clone_repo(clone_url, token, progress_cb=None):
     )
     resp.raise_for_status()
 
-    tmpdir = tempfile.mkdtemp(prefix="sastastic_")
+    tmpdir = tempfile.mkdtemp(prefix="scanorama_")
     try:
         zip_bytes = io.BytesIO(resp.content)
         with zipfile.ZipFile(zip_bytes) as zf:
