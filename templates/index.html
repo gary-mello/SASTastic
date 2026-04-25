@@ -700,6 +700,10 @@ async function loadResults() {
 function showResults() {
   showScreen('screenResults');
   switchTab('findings');
+  requestAnimationFrame(() => {
+    const wrap = document.getElementById('tableWrap');
+    vsRender(wrap ? wrap.scrollTop : 0);
+  });
 }
 
 function showNewScan() {
@@ -914,7 +918,7 @@ function vsRender(scrollTop) {
   const wrap = document.getElementById('tableWrap');
   if (!tbody || !filteredFindings.length) return;
 
-  const viewH = wrap ? wrap.clientHeight : 520;
+  const viewH = (wrap && wrap.clientHeight) ? wrap.clientHeight : 520;
   const total = filteredFindings.length;
   const startIdx = Math.max(0, Math.floor(scrollTop / VS_ROW_H) - 5);
   const endIdx = Math.min(total, Math.ceil((scrollTop + viewH) / VS_ROW_H) + 5);
