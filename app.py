@@ -338,6 +338,6 @@ def logout():
 
 if __name__ == "__main__":
     db_init()
-    port = int(os.environ.get("PORT", 5001))
+    port = int(os.environ.get("PORT", 7842))
     threading.Timer(1.2, lambda: webbrowser.open(f"http://localhost:{port}")).start()
     app.run(host="0.0.0.0", port=port, debug=False, threaded=True)

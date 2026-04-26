@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Install all dependencies and scanners (one-time)
 bash setup.sh
 
-# Run the app (auto-opens browser at http://localhost:5001)
+# Run the app (auto-opens browser at http://localhost:7842)
 python app.py
 
 # Change port
