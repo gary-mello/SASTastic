@@ -1,12 +1,33 @@
 import io
 import os
+import re
 import tempfile
 import shutil
 import zipfile
 import requests
+from urllib.parse import urlparse, urlunparse
 
 
 GITHUB_API = "https://api.github.com"
+
+
+def build_validated_url(base_url: str, owner: str, repo: str) -> str:
+    try:
+        if "/../" in base_url or re.search(r"/%2e%2e/", base_url, re.IGNORECASE):
+            raise ValueError("Invalid path")
+        
+        parsed = urlparse(base_url)
+        
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", owner):
+            raise ValueError("Invalid parameter")
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", repo):
+            raise ValueError("Invalid parameter")
+        
+        parsed = parsed._replace(path=f"/repos/{owner}/{repo}/zipball")
+        
+        return urlunparse(parsed)
+    except Exception:
+        raise ValueError("Invalid URL")
 
 
 def get_repos(token, page=1, per_page=100):
@@ -48,7 +69,7 @@ def clone_repo(clone_url, token, progress_cb=None):
 
     headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
     resp = requests.get(
-        f"{GITHUB_API}/repos/{owner}/{repo}/zipball",
+        build_validated_url(GITHUB_API, owner, repo),
         headers=headers,
         timeout=120,
         stream=True,
